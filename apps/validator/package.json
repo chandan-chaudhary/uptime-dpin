@@ -1,0 +1,24 @@
+{
+    "name": "validator",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "tsx watch validator.ts",
+        "build": "tsc",
+        "start": "node dist/validator.js",
+        "check-types": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@repo/db": "*",
+        "axios": "^1.7.9",
+        "dotenv": "^16.4.7",
+        "ethers": "^6.15.0",
+        "ws": "^8.18.0"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.2",
+        "@types/ws": "^8.5.13",
+        "tsx": "^4.20.6",
+        "typescript": "^5.9.2"
+    }
+}
