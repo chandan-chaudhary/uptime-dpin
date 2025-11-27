@@ -9,7 +9,8 @@ import {
 } from "@common/index";
 import { ethers } from "ethers";
 import { randomUUID } from "crypto";
-import {WebsiteStatus} from "@repo/db";
+import { WebsiteStatus } from "@repo/db";
+import { EventEmitter } from "events";
 
 // Validator Client
 export class UptimeValidator {
@@ -21,7 +22,12 @@ export class UptimeValidator {
   private publicKey: string;
   private privateKey: string;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private reconnectAttempts = 0;
+  private reconnectBase = 500; // ms
+  private reconnectMax = 30000; // ms
+  private manualClose = false;
   private validatorId: string;
+  public emitter = new EventEmitter();
 
   constructor(hubUrl: string, publicKey: string, privateKey: string) {
     this.hubUrl = hubUrl;
@@ -31,13 +37,32 @@ export class UptimeValidator {
   }
 
   public connect() {
+    // avoid creating multiple concurrent connections
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN ||
+        this.ws.readyState === WebSocket.CONNECTING)
+    ) {
+      console.log("🔌 WebSocket already open or connecting");
+      return;
+    }
+
     console.log(`🔌 Connecting to hub at ${this.hubUrl}...`);
+
+    // clear manual close flag when we intentionally connect
+    this.manualClose = false;
 
     this.ws = new WebSocket(this.hubUrl);
 
     // Setup event handlers
     this.ws.onopen = async () => {
       console.log("✅ Connected to hub");
+      // reset reconnect attempts on successful connection
+      this.reconnectAttempts = 0;
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = null;
+      }
       const callbackId = randomUUID();
       this.CALLBACKS[callbackId] = (data: SignupOutgoingMessage) => {
         this.validatorId = data.validatorId;
@@ -60,6 +85,8 @@ export class UptimeValidator {
     this.ws.onmessage = (event: WebSocket.MessageEvent) => {
       try {
         const message: OutgoingMessage = JSON.parse(event.data.toString());
+        // Emit raw hub message for listeners (CLI, tests)
+        this.emitter.emit("hub", message);
         this.handleMessage(message);
       } catch (error) {
         console.error("❌ Error parsing message:", error);
@@ -67,14 +94,81 @@ export class UptimeValidator {
     };
 
     // Handle connection close
-    this.ws.onclose = () => {
-      console.log("🔌 Disconnected from hub");
+    this.ws.onclose = (event: WebSocket.CloseEvent) => {
+      console.log("🔌 Disconnected from hub", event?.code, event?.reason);
+      // attempt reconnect unless explicitly closed by caller
+      if (!this.manualClose) {
+        this.scheduleReconnect();
+      }
     };
 
     // Handle errors
     this.ws.onerror = (event: WebSocket.ErrorEvent) => {
-      console.error("❌ WebSocket error:", event.message);
+      console.error(
+        "❌ WebSocket error:",
+        (event && (event as any).message) || event
+      );
+      // on error, the close handler will schedule reconnect
     };
+  }
+
+  private scheduleReconnect() {
+    this.reconnectAttempts += 1;
+    const exp = Math.min(
+      this.reconnectBase * Math.pow(2, this.reconnectAttempts - 1),
+      this.reconnectMax
+    );
+    // jitter ±0-30%
+    const jitter = Math.floor(Math.random() * Math.floor(exp * 0.3));
+    const delay = exp + jitter;
+    console.log(
+      `🔁 Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`
+    );
+    if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+    this.reconnectTimeout = setTimeout(() => {
+      // if manualClose became true in the meantime, do not reconnect
+      if (this.manualClose) return;
+      try {
+        this.connect();
+      } catch (e) {
+        console.error("Reconnect attempt failed:", e);
+        this.scheduleReconnect();
+      }
+    }, delay);
+  }
+
+  /* Public command helpers for CLI interaction */
+  // registration is performed automatically on WebSocket open (see `ws.onopen`)
+
+  public async pendingSummary() {
+    const data = {
+      validatorId: this.publicKey,
+      ts: Date.now(),
+      nonce: randomUUID(),
+    };
+    const sig = await this.signMessage(JSON.stringify(data));
+    this.send({ type: "pending_summary", data, sig });
+  }
+
+  public async pendingList() {
+    const data = {
+      validatorId: this.publicKey,
+      ts: Date.now(),
+      nonce: randomUUID(),
+    };
+    const sig = await this.signMessage(JSON.stringify(data));
+    this.send({ type: "pending_list", data, sig });
+  }
+
+  public async requestWithdraw(payoutId: string) {
+    const data = {
+      validatorId: this.publicKey,
+      payoutId,
+      ts: Date.now(),
+      nonce: randomUUID(),
+    };
+    const sig = await this.signMessage(JSON.stringify(data));
+    this.send({ type: "request_withdraw_url", data, sig });
   }
 
   // Handle incoming messages from hub
@@ -105,8 +199,10 @@ export class UptimeValidator {
       const latency = Date.now() - startTime;
       const status =
         response.status === 200 ? WebsiteStatus.Good : WebsiteStatus.Bad;
-        console.log(`${data.url}: ${response.status}, ${latency}ms, in Validator`);
-        
+      console.log(
+        `${data.url}: ${response.status}, ${latency}ms, in Validator`
+      );
+
       this.send({
         type: "validate",
         data: {
@@ -150,7 +246,7 @@ export class UptimeValidator {
   }
 
   // Send message to hub (so it become IcomingMessage for hub)
-  private send(message:any) {
+  private send(message: any) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
@@ -163,38 +259,47 @@ export class UptimeValidator {
     // this.stopHeartbeat();
     // this.stopAllChecks();
 
+    // mark manual close so onclose doesn't schedule reconnect
+    this.manualClose = true;
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
 
     if (this.ws) {
-      this.ws.close();
+      try {
+        this.ws.close();
+      } catch (e) {}
       this.ws = null;
     }
   }
 }
 
-// Start validator
-const HUB_URL = process.env.HUB_URL || "ws://localhost:8080";
-const PUBLIC_KEY =
-  process.env.VALIDATOR_PUBLIC_KEY ||
-  `validator_${Math.random().toString(36).substring(7)}`;
-const PRIVATE_KEY =
-  process.env.VALIDATOR_PRIVATE_KEY ||
-  `private_key_${Math.random().toString(36).substring(7)}`;
-const LOCATION = process.env.VALIDATOR_LOCATION || "Local Development";
+// The validator is intentionally NOT auto-started here.
+// Create and start the validator from a CLI or process supervisor so there's
+// a single control point (for example, `apps/validator/cli.ts` creates an
+// instance and calls `connect()` when needed).
 
-console.log("🚀 Starting Uptime Validator");
-console.log(`📍 Location: ${LOCATION}`);
-console.log(`🔑 Public Key: ${PUBLIC_KEY}`);
+// // Start validator
+// const HUB_URL = process.env.HUB_URL || "ws://localhost:8080";
+// const PUBLIC_KEY =
+//   process.env.VALIDATOR_PUBLIC_KEY ||
+//   `validator_${Math.random().toString(36).substring(7)}`;
+// const PRIVATE_KEY =
+//   process.env.VALIDATOR_PRIVATE_KEY ||
+//   `private_key_${Math.random().toString(36).substring(7)}`;
+// const LOCATION = process.env.VALIDATOR_LOCATION || "Local Development";
 
-const validator = new UptimeValidator(HUB_URL, PUBLIC_KEY, PRIVATE_KEY);
-validator.connect();
+// console.log("🚀 Starting Uptime Validator");
+// console.log(`📍 Location: ${LOCATION}`);
+// console.log(`🔑 Public Key: ${PUBLIC_KEY}`);
 
-// Graceful shutdown
-process.on("SIGINT", () => {
-  console.log("\n🛑 Shutting down validator...");
-  validator.disconnect();
-  process.exit(0);
-});
+// const validator = new UptimeValidator(HUB_URL, PUBLIC_KEY, PRIVATE_KEY);
+// validator.connect();
+
+// // Graceful shutdown
+// process.on("SIGINT", () => {
+//   console.log("\n🛑 Shutting down validator...");
+//   validator.disconnect();
+//   process.exit(0);
+// });

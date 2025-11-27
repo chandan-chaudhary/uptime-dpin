@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-11447a0870cc7a1fb7e87572d2fb7960c82482c1",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/Payment.sol": "project/contracts/Payment.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/Payment.sol": {
+        "content": "// SPDX-License-Identifier: UNLICENSED\npragma solidity ^0.8.28;\n\nerror Payment__OnlyOwner();\nerror Payment__PaymentMustBeGreaterThanZero();\nerror InvalidAddress();\nerror TransactionFailed();\n\ncontract Payment {\n    event PaymentReceived(address indexed from, uint256 amount);\n    event SentPayment_validator(address indexed to, uint256 amount);\n\n    address private owner;\n    constructor() {\n        owner = msg.sender;\n    }\n\n    function changeOwner(address newOwner) external onlyOwner {\n        if (msg.sender != owner) {\n            revert Payment__OnlyOwner();\n        }\n        if (newOwner == address(0)) {\n            revert InvalidAddress();\n        }\n        owner = newOwner;\n    }\n\n    function withdraw(uint256 amount) external onlyOwner {\n        if (amount > address(this).balance) {\n            revert Payment__PaymentMustBeGreaterThanZero();\n        }\n        payable(owner).transfer(amount);\n        emit PaymentReceived(owner, amount);\n    }\n\n    function receivePayment(address from, uint256 amount) external payable {\n        if (amount <= 0) {\n            revert Payment__PaymentMustBeGreaterThanZero();\n        }\n        if (from == address(0)) {\n            revert InvalidAddress();\n        }\n        emit PaymentReceived(payable(from), msg.value);\n    }\n\n    function payValidator(address validator) external payable {\n        if (msg.value <= 0) {\n            revert Payment__PaymentMustBeGreaterThanZero();\n        }\n        if (validator == address(0)) {\n            revert InvalidAddress();\n        }\n        (bool success, ) = validator.call{value: msg.value}(\"\");\n        if (!success) {\n            revert TransactionFailed();\n        }\n        emit PaymentReceived(validator, msg.value);\n    }\n\n    modifier onlyOwner() {\n        if (msg.sender != owner) {\n            revert Payment__OnlyOwner();\n        }\n        _;\n    }\n\n    // GETTER FUNCTION\n\n    function getOwner() external view returns (address) {\n        return owner;\n    }\n}\n"
+      }
+    }
+  }
+}

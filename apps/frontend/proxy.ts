@@ -22,6 +22,8 @@ export default clerkMiddleware(async (auth, request) => {
   // For API routes, inject userId into headers
   if (request.nextUrl.pathname.startsWith("/api/")) {
     const userId = await getUserIdLazy(request);
+    console.log('user in hearder', userId);
+    
     if (userId) return NextResponse.next();
 
     //   {
@@ -42,10 +44,12 @@ export default clerkMiddleware(async (auth, request) => {
       const requestHeaders = new Headers(request.headers);
 
       // Sync user to database ONLY on first access or auth-related routes
-        const mock_clerkId = '62bafe89-5975-427c-a636-7da3e07dd8bb'
+        // const mock_clerkId = '62bafe89-5975-427c-a636-7da3e07dd8bb'
       // const mock_clerkId = '550e8400-e29b-41d4-a716-446655440001'
       // Sync user to database
-      const user = await getOrCreateUser(mock_clerkId);
+      console.log(clerkId, 'in create user');
+      
+      const user = await getOrCreateUser(clerkId);
       if (user) {
         requestHeaders.set("x-user-id", user.id);
         // requestHeaders.set("x-clerk-id", clerkId);

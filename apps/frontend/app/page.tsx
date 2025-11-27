@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -9,17 +9,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  CheckCircle2,
-  Activity,
-  Bell,
-  BarChart3,
-  Shield,
-  Zap,
-  Globe,
-  Clock,
-} from "lucide-react";
+import { CheckCircle2, BarChart3, Globe, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
+import PricingSection from "@/components/PricingSection";
+import Features from "@/components/Features";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   const router = useRouter();
@@ -46,7 +40,7 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button
-                  onClick={() => router.push('/dashboard')}
+                  onClick={() => router.push("/dashboard")}
                   size="lg"
                   className="bg-emerald-500 text-white hover:bg-emerald-600"
                 >
@@ -307,213 +301,11 @@ export default function Home() {
       </section>
 
       <section id="features" className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-100 mb-4">
-              Powerful Features
-            </h2>
-            <p className="text-xl text-slate-300">
-              Everything you need to keep your websites running smoothly
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="p-3 bg-emerald-100 rounded-lg w-fit mb-4">
-                  <Activity className="h-6 w-6 text-emerald-600" />
-                </div>
-                <CardTitle>Real-Time Monitoring</CardTitle>
-                <CardDescription>
-                  Monitor your websites every 30 seconds from multiple locations
-                  around the world.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="p-3 bg-blue-100 rounded-lg w-fit mb-4">
-                  <Bell className="h-6 w-6 text-blue-600" />
-                </div>
-                <CardTitle>Instant Alerts</CardTitle>
-                <CardDescription>
-                  Get notified immediately via email, SMS, Slack, or webhook
-                  when downtime is detected.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="p-3 bg-purple-100 rounded-lg w-fit mb-4">
-                  <BarChart3 className="h-6 w-6 text-purple-600" />
-                </div>
-                <CardTitle>Detailed Analytics</CardTitle>
-                <CardDescription>
-                  View comprehensive reports with response times, uptime
-                  percentages, and historical data.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="p-3 bg-orange-100 rounded-lg w-fit mb-4">
-                  <Shield className="h-6 w-6 text-orange-600" />
-                </div>
-                <CardTitle>SSL Monitoring</CardTitle>
-                <CardDescription>
-                  Track SSL certificate expiration and get alerted before your
-                  certificates expire.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="p-3 bg-red-100 rounded-lg w-fit mb-4">
-                  <Zap className="h-6 w-6 text-red-600" />
-                </div>
-                <CardTitle>Performance Tracking</CardTitle>
-                <CardDescription>
-                  Monitor page load times and performance metrics to optimize
-                  user experience.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="p-3 bg-teal-100 rounded-lg w-fit mb-4">
-                  <Globe className="h-6 w-6 text-teal-600" />
-                </div>
-                <CardTitle>Global Coverage</CardTitle>
-                <CardDescription>
-                  Monitor from 15+ locations worldwide to ensure global
-                  availability and performance.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
+        <Features />
       </section>
 
-      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">
-              Simple Pricing
-            </h2>
-            <p className="text-xl text-slate-600">
-              Choose the plan that fits your needs
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <CardTitle>Starter</CardTitle>
-                <CardDescription>Perfect for small projects</CardDescription>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">$9</span>
-                  <span className="text-slate-600">/month</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">5 monitors</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">1-minute checks</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">Email alerts</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">30-day history</span>
-                  </li>
-                </ul>
-                <Button className="w-full mt-6" variant="outline">
-                  Get Started
-                </Button>
-              </CardContent>
-            </Card>
-            <Card className="hover:shadow-xl transition-shadow border-emerald-500 border-2 relative">
-              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-600">
-                Most Popular
-              </Badge>
-              <CardHeader>
-                <CardTitle>Professional</CardTitle>
-                <CardDescription>For growing businesses</CardDescription>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">$29</span>
-                  <span className="text-slate-600">/month</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">25 monitors</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">30-second checks</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">All alert channels</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">1-year history</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">SSL monitoring</span>
-                  </li>
-                </ul>
-                <Button className="w-full mt-6">Get Started</Button>
-              </CardContent>
-            </Card>
-            <Card className="hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <CardTitle>Enterprise</CardTitle>
-                <CardDescription>For large organizations</CardDescription>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">$99</span>
-                  <span className="text-slate-600">/month</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">Unlimited monitors</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">10-second checks</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">Priority support</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">Unlimited history</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-700">Custom integrations</span>
-                  </li>
-                </ul>
-                <Button className="w-full mt-6" variant="outline">
-                  Contact Sales
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8">
+        <PricingSection />
       </section>
 
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-linear-to-br from-emerald-600 to-emerald-700">
@@ -540,96 +332,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="bg-slate-900 text-slate-400 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Activity className="h-6 w-6 text-emerald-500" />
-                <span className="text-xl font-bold text-white">
-                  UptimeGuard
-                </span>
-              </div>
-              <p className="text-sm">
-                Reliable uptime monitoring for modern websites.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-white font-semibold mb-4">Product</h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Pricing
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    API
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Documentation
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-white font-semibold mb-4">Company</h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    About
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Careers
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Contact
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-white font-semibold mb-4">Legal</h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Privacy
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Terms
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Security
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-slate-800 pt-8 text-sm text-center">
-            <p>&copy; 2025 UptimeGuard. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

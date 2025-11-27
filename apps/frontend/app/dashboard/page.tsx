@@ -20,15 +20,8 @@ import {
 import { useWebsites } from "@/hooks/useWebsites";
 import { AddWebsiteModal } from "@/components/AddWebsiteModal";
 import type { WebsiteTick } from "@repo/db";
+import { InvoiceList } from "@/components/InvoiceList";
 
-// interface TickWindow {
-//   id: string;
-//   status: "Good" | "Bad";
-//   avgLatency: number;
-//   timestamp: Date;
-//   location: string;
-//   tickCount: number;
-// }
 type UpTimeStatus = "Good" | "Bad" | "Degraded";
 interface ProcessedWebsite {
   id: string;
@@ -447,6 +440,7 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+      <InvoiceList />
     </div>
   );
 }

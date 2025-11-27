@@ -10,17 +10,61 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
+}
+
+enum WebsiteStatus {
+  Good
+  Bad
+}
+
+enum InvoiceStatus {
+  Pending
+  Paid
+  Failed
+  Refunded
+}
+
+enum TxKind {
+  Payment
+  Payout
+  Fee
+  Other
+}
+
+enum TxStatus {
+  Pending
+  Confirmed
+  Failed
+  Reverted
+}
+
+enum PayoutStatus {
+  Pending
+  Processing
+  Completed
+  Failed
+  Cancelled
+}
+
+enum LedgerType {
+  Credit
+  Debit
+  Fee
+  Refund
+  Payout
 }
 
 model User {
-  id        String    @id @default(uuid()) @db.Uuid
-  clerkId   String    @unique // Clerk user ID for mapping
-  email     String    @unique
-  password  String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  websites  Website[]
+  id            String        @id @default(uuid()) @db.Uuid
+  clerkId       String        @unique // Clerk user ID for mapping
+  email         String        @unique
+  password      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  websites      Website[]
+  invoice       Invoice[]
+  ledgerEntries LedgerEntry[]
 }
 
 model Website {
@@ -45,6 +89,7 @@ model Validator {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   ticks         WebsiteTick[]
+  payouts       Payout[]
 }
 
 model WebsiteTick {
@@ -63,7 +108,59 @@ model WebsiteTick {
   @@index([timestamp])
 }
 
-enum WebsiteStatus {
-  Good
-  Bad
+model Invoice {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @db.Uuid
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount          Decimal       @db.Decimal(30, 6)
+  currency        String        @default("ETH")
+  status          InvoiceStatus @default(Pending)
+  paidAt          DateTime?
+  txHash          String? // on-chain tx hash if paid on-chain
+  metadata        Json? // free-form (plan, period, notes)
+  createdAt       DateTime      @default(now())
+  paidByPublicKey String? // The public key that paid this invoice
+
+  @@index([userId])
+}
+
+model OnchainTransaction {
+  id          String   @id @default(uuid()) @db.Uuid
+  txHash      String   @unique
+  from        String
+  to          String
+  value       Decimal  @db.Decimal(30, 6)
+  currency    String   @default("ETH")
+  kind        TxKind // payment | payout | fee | other
+  status      TxStatus @default(Pending)
+  blockHash   String?
+  blockNumber Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Payout {
+  id          String       @id @default(uuid()) @db.Uuid
+  validatorId String       @db.Uuid
+  validator   Validator    @relation(fields: [validatorId], references: [id], onDelete: Cascade)
+  amount      Decimal      @db.Decimal(30, 6)
+  currency    String       @default("ETH")
+  status      PayoutStatus @default(Pending)
+  requestedAt DateTime     @default(now())
+  processedAt DateTime?
+  txHash      String?
+  note        String?
+}
+
+model LedgerEntry {
+  id        String     @id @default(uuid()) @db.Uuid
+  publicKey String // The payer's public key
+  userId    String?    @db.Uuid
+  user      User?      @relation(fields: [userId], references: [id])
+  amount    Decimal    @db.Decimal(30, 6)
+  currency  String     @default("ETH")
+  type      LedgerType
+  reference String? // invoice id, payout id, tx id, etc
+  metadata  Json?
+  createdAt DateTime   @default(now())
 }

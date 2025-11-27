@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-        "dev": "tsx watch validator.ts",
+        "dev": "tsx watch cli.ts",
         "build": "tsc",
         "start": "node dist/validator.js",
         "check-types": "tsc --noEmit"

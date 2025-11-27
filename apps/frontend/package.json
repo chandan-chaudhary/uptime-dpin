@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "copy-abi": "cp ../../packages/blockchain/ignition/deployments/chain-11155111/artifacts/PaymentsModule#Payment.json ./lib/Payment_abi.json"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.35.1",

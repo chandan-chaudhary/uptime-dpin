@@ -23,7 +23,7 @@
   "include": [
     "src/**/*",
     "validator.ts",
-    "validator.ts",
+    "cli.ts",
     "../../packages/common/**/*"
   ],
   "exclude": [

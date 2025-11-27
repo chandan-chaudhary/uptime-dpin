@@ -1,4 +1,4 @@
-import { prisma } from "@repo/db/client";
+import { prisma } from "@repo/db";
 // import { User, currentUser } from "@clerk/nextjs/server";
 
 /**
@@ -6,19 +6,20 @@ import { prisma } from "@repo/db/client";
  * This syncs Clerk users to our local database
  */
 export async function getOrCreateUser(clerkId?: string) {
-//   const { userId: clerkId } = await auth();
+  //   const { userId: clerkId } = await auth();
 
   if (!clerkId) {
     return null;
   }
-
+  let user;
   // Check if user exists in our database
-  // let user = await prisma.user.findUnique({
-  //   where: { clerkId},
-  // });
-   let user = await prisma.user.findUnique({
-    where: { id:clerkId},
+  user = await prisma.user.findUnique({
+    where: { clerkId },
   });
+  // if(!user)
+  // user = await prisma.user.findUnique({
+  //   where: { id: clerkId },
+  // });
 
   // If user doesn't exist, create them
   if (!user) {
@@ -42,7 +43,7 @@ export async function getOrCreateUser(clerkId?: string) {
     user = await prisma.user.create({
       data: {
         clerkId,
-        email:clerkId + "@clerk.local", // Using clerkId as placeholder email
+        email: clerkId + "@clerk.local", // Using clerkId as placeholder email
       },
     });
     console.log(user);
