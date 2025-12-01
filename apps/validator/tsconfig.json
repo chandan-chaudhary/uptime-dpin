@@ -1,8 +1,7 @@
 {
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "../..",
+    "outDir": "dist",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "target": "ES2020",
@@ -12,8 +11,8 @@
     "types": [
       "node"
     ],
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
+    "ignoreDeprecations": "5.0",
+    // "baseUrl": ".",
     "paths": {
       "@common/*": [
         "../../packages/common/*"
@@ -21,9 +20,9 @@
     }
   },
   "include": [
+    "src/validator.ts",
+    "src/cli.ts",
     "src/**/*",
-    "validator.ts",
-    "cli.ts",
     "../../packages/common/**/*"
   ],
   "exclude": [

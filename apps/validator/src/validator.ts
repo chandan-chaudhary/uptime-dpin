@@ -9,8 +9,56 @@ import {
 } from "@common/index";
 import { ethers } from "ethers";
 import { randomUUID } from "crypto";
-import { WebsiteStatus } from "@repo/db";
+// import { WebsiteStatus } from "@repo/db";  // need to be fixed in the build
 import { EventEmitter } from "events";
+
+// API Response Types
+export interface PendingPayoutResponse {
+  validatorId: string;
+  publicKey: string;
+  pendingPayout: {
+    gwei: number;
+    eth: number;
+  };
+  createdAt: string;
+}
+
+export interface PayoutHistoryResponse {
+  validatorId: string;
+  publicKey: string;
+  payouts: Array<{
+    id: string;
+    amount: number;
+    currency: string;
+    status: string;
+    requestedAt: string;
+    processedAt: string;
+    txHash: string | null;
+  }>;
+  summary: {
+    totalPayouts: number;
+    completedPayouts: number;
+    totalPaidEth: number;
+  };
+}
+
+export interface PayoutRequestResponse {
+  success: boolean;
+  payout: {
+    id: string;
+    amount: number;
+    currency: string;
+    status: string;
+    requestedAt: string;
+    processedAt: string;
+    txHash: string | null;
+  };
+}
+
+export interface ApiErrorResponse {
+  error: string;
+  details?: string;
+}
 
 // Validator Client
 export class UptimeValidator {
@@ -140,37 +188,116 @@ export class UptimeValidator {
   /* Public command helpers for CLI interaction */
   // registration is performed automatically on WebSocket open (see `ws.onopen`)
 
-  public async pendingSummary() {
-    const data = {
-      validatorId: this.publicKey,
-      ts: Date.now(),
-      nonce: randomUUID(),
-    };
-    const sig = await this.signMessage(JSON.stringify(data));
-    this.send({ type: "pending_summary", data, sig });
+  // Get pending payout from API
+  public async getPendingPayout(
+    apiUrl: string
+  ): Promise<PendingPayoutResponse> {
+    if (!this.validatorId) {
+      throw new Error(
+        "Validator not registered. Please connect to hub first using 'start' command."
+      );
+    }
+
+    try {
+      const response = await axios.get<PendingPayoutResponse>(
+        `${apiUrl}/api/payments/payout/${this.validatorId}`
+      );
+      
+      return response.data;
+
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          const apiError = error.response.data as ApiErrorResponse;
+          throw new Error(
+            apiError.error ||
+              `Failed to fetch pending payout: ${error.response.status} ${error.response.statusText}`
+          );
+        } else if (error.request) {
+          throw new Error(
+            `Cannot reach API at ${apiUrl}. Please check your PAYOUT_API_URL configuration and internet connection.`
+          );
+        }
+      }
+      throw new Error(
+        `Failed to fetch pending payout: ${(error as Error).message}`
+      );
+    }
   }
 
-  public async pendingList() {
-    const data = {
-      validatorId: this.publicKey,
-      ts: Date.now(),
-      nonce: randomUUID(),
-    };
-    const sig = await this.signMessage(JSON.stringify(data));
-    this.send({ type: "pending_list", data, sig });
+  // Get payout history from API
+  public async getPayoutHistory(
+    apiUrl: string
+  ): Promise<PayoutHistoryResponse> {
+    if (!this.validatorId) {
+      throw new Error(
+        "Validator not registered. Please connect to hub first using 'start' command."
+      );
+    }
+
+    try {
+      const response = await axios.get<PayoutHistoryResponse>(
+        `${apiUrl}/api/payments/payout/${this.validatorId}/history`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          const apiError = error.response.data as ApiErrorResponse;
+          throw new Error(
+            apiError.error ||
+              `Failed to fetch payout history: ${error.response.status} ${error.response.statusText}`
+          );
+        } else if (error.request) {
+          throw new Error(
+            `Cannot reach API at ${apiUrl}. Please check your PAYOUT_API_URL configuration and internet connection.`
+          );
+        }
+      }
+      throw new Error(
+        `Failed to fetch payout history: ${(error as Error).message}`
+      );
+    }
   }
 
-  public async requestWithdraw(payoutId: string) {
-    const data = {
-      validatorId: this.publicKey,
-      payoutId,
-      ts: Date.now(),
-      nonce: randomUUID(),
-    };
-    const sig = await this.signMessage(JSON.stringify(data));
-    this.send({ type: "request_withdraw_url", data, sig });
+  // Request payout via API
+  public async requestPayout(apiUrl: string): Promise<PayoutRequestResponse> {
+    if (!this.validatorId) {
+      throw new Error(
+        "Validator not registered. Please connect to hub first using 'start' command."
+      );
+    }
+
+    try {
+      const response = await axios.post<PayoutRequestResponse>(
+        `${apiUrl}/api/payments/payout/${this.validatorId}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          const apiError = error.response.data as ApiErrorResponse;
+          throw new Error(
+            apiError.error ||
+              `Failed to request payout: ${error.response.status} ${error.response.statusText}`
+          );
+        } else if (error.request) {
+          throw new Error(
+            `Cannot reach API at ${apiUrl}. Please check your PAYOUT_API_URL configuration and internet connection.`
+          );
+        }
+      }
+      throw new Error(`Failed to request payout: ${(error as Error).message}`);
+    }
   }
 
+  // Get validator ID (useful for debugging)
+  public getValidatorId(): string {
+    return this.validatorId;
+  }
+
+
+ 
   // Handle incoming messages from hub
   private async handleMessage(message: OutgoingMessage) {
     if (message.type === "signup") {
@@ -197,8 +324,7 @@ export class UptimeValidator {
     try {
       const response = await axios.get(data.url);
       const latency = Date.now() - startTime;
-      const status =
-        response.status === 200 ? WebsiteStatus.Good : WebsiteStatus.Bad;
+      const status = response.status === 200 ? "Good" : "Bad";
       console.log(
         `${data.url}: ${response.status}, ${latency}ms, in Validator`
       );
@@ -219,7 +345,7 @@ export class UptimeValidator {
         type: "validate",
         data: {
           callbackId: data.callbackId,
-          status: WebsiteStatus.Bad,
+          status: "Bad",
           latency: Date.now() - startTime,
           websiteId: data.websiteId,
           validatorId: this.publicKey,

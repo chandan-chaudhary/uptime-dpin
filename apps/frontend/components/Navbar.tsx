@@ -1,3 +1,5 @@
+"use client";
+
 import {
   SignInButton,
   SignUpButton,
@@ -6,8 +8,12 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { Activity } from "lucide-react";
+import { SubscriptionBadge } from "@/components/SubscriptionBadge";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export const Navbar = () => {
+  const { subscription } = useSubscription();
+
   return (
     <nav className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm fixed w-full z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -39,6 +45,7 @@ export const Navbar = () => {
             </a>
             <div className="flex items-center space-x-4">
               <SignedIn>
+                {subscription && <SubscriptionBadge plan={subscription.plan} />}
                 <UserButton
                   appearance={{
                     elements: {

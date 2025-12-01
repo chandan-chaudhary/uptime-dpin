@@ -1,11 +1,15 @@
 {
-    "name": "validator",
+    "name": "@uptime-dpin/validator",
     "version": "1.0.0",
-    "private": true,
+    "private": false,
+    "main": "dist/cli.js",
+    "bin": {
+        "uptime-validator": "dist/cli.js"
+    },
     "scripts": {
-        "dev": "tsx watch cli.ts",
-        "build": "tsc",
-        "start": "node dist/validator.js",
+        "dev": "tsx watch src/cli.ts",
+        "build": "esbuild src/cli.ts --bundle --platform=node --format=esm --outfile=dist/cli.js  --external:@repo/db --external:dotenv --external:ws --external:axios --external:ethers --external:fs --external:path",
+        "start": "node dist/cli.js",
         "check-types": "tsc --noEmit"
     },
     "dependencies": {
@@ -18,6 +22,7 @@
     "devDependencies": {
         "@types/node": "^22.10.2",
         "@types/ws": "^8.5.13",
+        "esbuild": "^0.27.0",
         "tsx": "^4.20.6",
         "typescript": "^5.9.2"
     }

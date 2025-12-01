@@ -4,10 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 // Get website by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { websiteId: string } }
+  { params }: { params: Promise<{ websiteId: string }> }
 ) {
   try {
-    const { websiteId } = params;
+    const { websiteId } = await params;
 
     const website = await prisma.website.findUnique({
       where: { id: websiteId },
@@ -57,10 +57,10 @@ export async function GET(
 // Update website by ID
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { websiteId: string } }
+  { params }: { params: Promise<{ websiteId: string }> }
 ) {
   try {
-    const { websiteId } = params;
+    const { websiteId } = await params;
     const body = await request.json();
     const { url } = body;
 
@@ -87,7 +87,7 @@ export async function PATCH(
 
     // Update website
     const website = await prisma.website.update({
-      where: {  id: websiteId },
+      where: { id: websiteId },
       data: {
         ...(url && { url }),
       },
@@ -117,10 +117,10 @@ export async function PATCH(
 // Delete website by ID
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { websiteId: string } }
+  { params }: { params: Promise<{ websiteId: string }> }
 ) {
   try {
-    const { websiteId } = params;
+    const { websiteId } = await params;
 
     // Check if website exists
     const existingWebsite = await prisma.website.findUnique({

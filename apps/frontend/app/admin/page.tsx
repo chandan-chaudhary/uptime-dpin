@@ -11,7 +11,8 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { PAYMENT_CONTRACT_ADDRESS } from "@/lib/utils";
-import { connectWallet } from "@/components/PricingSection";
+import { connectWallet } from "@/hooks/useWallet";
+import { ManualPayoutTrigger } from "@/components/ManualPayoutTrigger";
 
 export default function AdminPage() {
   const [owner, setOwner] = useState<string>("");
@@ -21,28 +22,21 @@ export default function AdminPage() {
   const [message, setMessage] = useState<string>("");
   const [connectedAddress, setConnectedAddress] = useState<string>("");
 
-  // async function connectWallet() {
-  //   setMessage("");
-  //   try {
-  //     if (!window.ethereum) throw new Error("No wallet found!");
-  //     // Use wallet_requestPermissions to force account selection
-  //     await window.ethereum.request({
-  //       method: "wallet_requestPermissions",
-  //       params: [{ eth_accounts: {} }],
-  //     });
-  //     const accounts = await window.ethereum.request({
-  //       method: "eth_accounts",
-  //     });
-  //     if (accounts && accounts.length > 0) {
-  //       setConnectedAddress(accounts[0]);
-  //       setMessage("Wallet connected: " + accounts[0]);
-  //     } else {
-  //       setMessage("No wallet address returned.");
-  //     }
-  //   } catch (err) {
-  //     setMessage(err instanceof Error ? err.message : String(err));
-  //   }
-  // }
+  async function handleConnectWallet() {
+    try {
+      const wallet = await connectWallet();
+      if (!wallet) {
+        setMessage("Wallet connection failed.");
+        return;
+      }
+      // const signer = wallet.signer;
+      const address = wallet.publicKey;
+      setConnectedAddress(address);
+      setMessage("Wallet connected: " + address);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : String(err));
+    }
+  }
 
   function disconnectWallet() {
     setConnectedAddress("");
@@ -186,59 +180,66 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto mt-12 min-h-screen">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex justify-end mb-6 gap-4">
         {connectedAddress ? (
           <>
             <Button
               onClick={disconnectWallet}
-              className="bg-red-600 text-white px-6 py-2 rounded"
+              variant="outline"
+              className="border-red-500/50 text-red-400 hover:bg-red-500/10"
             >
               Disconnect Wallet
             </Button>
             <Button
-              onClick={connectWallet}
-              className="bg-emerald-600 text-white px-6 py-2 rounded"
+              onClick={handleConnectWallet}
+              className="bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30"
             >
               {`Connected: ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}`}
             </Button>
           </>
         ) : (
           <Button
-            onClick={connectWallet}
-            className="bg-emerald-600 text-white px-6 py-2 rounded"
+            onClick={handleConnectWallet}
+            className="bg-emerald-500 text-white hover:bg-emerald-600"
           >
             Connect Wallet
           </Button>
         )}
       </div>
       <div className="text-center mb-10">
-        <h2 className="text-4xl font-bold text-white mb-4">Admin Controls</h2>
-        <p className="text-xl text-slate-100">
+        <h2 className="text-4xl font-bold text-slate-100 mb-4">
+          Admin Controls
+        </h2>
+        <p className="text-xl text-slate-400">
           Manage contract owner and withdrawals
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card className="hover:shadow-xl transition-shadow">
+        <Card className="border-slate-800 bg-slate-900/50 hover:shadow-xl hover:shadow-emerald-500/10 transition-all">
           <CardHeader>
-            <CardTitle>Withdraw Funds</CardTitle>
-            <CardDescription>Only contract owner can withdraw</CardDescription>
+            <CardTitle className="text-slate-100">Withdraw Funds</CardTitle>
+            <CardDescription className="text-slate-400">
+              Only contract owner can withdraw
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="mb-4">
-              <label className="block text-slate-300 mb-2">Amount (ETH)</label>
+              <label className="block text-slate-300 mb-2 text-sm font-medium">
+                Amount (ETH)
+              </label>
               <input
                 type="number"
                 min="0"
                 step="any"
-                className="w-full px-3 py-2 rounded bg-slate-800 text-white border border-slate-700"
+                className="w-full px-3 py-2 rounded-lg bg-slate-950 text-white border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-colors"
                 value={withdrawAmount}
                 onChange={(e) => setWithdrawAmount(e.target.value)}
                 placeholder="Enter amount"
               />
             </div>
             <Button
-              className="w-full"
+              className="w-full bg-emerald-500 hover:bg-emerald-600"
               onClick={handleWithdraw}
               disabled={loading || !withdrawAmount}
             >
@@ -246,28 +247,28 @@ export default function AdminPage() {
             </Button>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-xl transition-shadow">
+        <Card className="border-slate-800 bg-slate-900/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all">
           <CardHeader>
-            <CardTitle>Change Owner</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-slate-100">Change Owner</CardTitle>
+            <CardDescription className="text-slate-400">
               Only contract owner can change owner
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="mb-4">
-              <label className="block text-slate-300 mb-2">
+              <label className="block text-slate-300 mb-2 text-sm font-medium">
                 New Owner Address
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 rounded bg-slate-800 text-white border border-slate-700"
+                className="w-full px-3 py-2 rounded-lg bg-slate-950 text-white border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
                 value={newOwner}
                 onChange={(e) => setNewOwner(e.target.value)}
                 placeholder="Enter new owner address"
               />
             </div>
             <Button
-              className="w-full"
+              className="w-full bg-blue-500 hover:bg-blue-600"
               onClick={handleChangeOwner}
               disabled={loading || !newOwner}
             >
@@ -277,10 +278,21 @@ export default function AdminPage() {
         </Card>
       </div>
       {message && (
-        <div className="mt-8 text-center text-lg text-emerald-400">
+        <div
+          className={`mt-8 text-center text-lg p-4 rounded-lg border ${
+            message.includes("successful") || message.includes("connected")
+              ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400"
+              : "bg-red-500/10 border-red-500/50 text-red-400"
+          }`}
+        >
           {message}
         </div>
       )}
+
+      {/* Manual payout trigger for admin */}
+      <div className="mt-12">
+        <ManualPayoutTrigger />
+      </div>
     </div>
   );
 }

@@ -23,7 +23,7 @@ export function useInvoices() {
     const fetchInvoices = async () => {
       setLoading(true);
       try {
-        const res = await axios.get("/api/invoices");
+        const res = await axios.get("/api/payments/invoices");
         setInvoices(res.data.invoices || []);
       } catch {
         setError("Failed to load invoices");

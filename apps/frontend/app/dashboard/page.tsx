@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Accordion,
@@ -18,113 +17,17 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useWebsites } from "@/hooks/useWebsites";
+import { useProcessedWebsites } from "@/hooks/useProcessedWebsites";
 import { AddWebsiteModal } from "@/components/AddWebsiteModal";
-import type { WebsiteTick } from "@repo/db";
 import { InvoiceList } from "@/components/InvoiceList";
-
-type UpTimeStatus = "Good" | "Bad" | "Degraded";
-interface ProcessedWebsite {
-  id: string;
-  url: string;
-  totalChecks: number;
-  status: UpTimeStatus;
-  uptime: number;
-  avgResponseTime: number;
-  recentTicks: (WebsiteTick & { validator: { location: string } })[];
-  tickWindows: UpTimeStatus[];
-  lastChecked: string;
-}
+import { SubscriptionBadge } from "@/components/SubscriptionBadge";
+import { useSubscription } from "@/hooks/useSubscription";
+import { getStatusColor, getRelativeTime } from "@/lib/dashboardUtils";
 
 export default function DashboardPage() {
   const { websites, loading } = useWebsites();
-
-  // Process websites with memoization
-  const processedWebsites = useMemo(() => {
-    return websites.map((website): ProcessedWebsite => {
-      const now = new Date();
-      const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
-
-      // Sort all ticks by createdAt (newest first)
-      const sortedTicks = [...website.ticks].sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      
-      // Filter ticks from last 30 minutes based on createdAt
-      const recentTicks = sortedTicks.filter((tick) => {
-        const tickDate = new Date(tick.createdAt);
-        console.log(tickDate, thirtyMinutesAgo);
-        
-        return tickDate > thirtyMinutesAgo;
-      });
-      console.log(recentTicks );
-      
-      const windows: UpTimeStatus[] = [];
-
-      for (let i = 0; i < 10; i++) {
-        const windowStart = new Date(now.getTime() - (i + 1) * 3 * 60 * 1000);
-        const windowEnd = new Date(now.getTime() - i * 3 * 60 * 1000);
-
-        const windowTicks = recentTicks.filter((tick) => {
-          const tickDate = new Date(tick.createdAt);
-          return tickDate >= windowStart && tickDate < windowEnd;
-        });
-        // console.log(windowTicks, windows,);
-        
-
-        const upTicks = windowTicks.filter((t) => t.status === "Good").length;
-        // const downTicks = windowTicks.filter((t) => t.status === "Bad").length;
-
-        windows[9 - i] =
-          windowTicks.length === 0
-            ? "Degraded"
-            : upTicks / windowTicks.length >= 0.5
-              ? "Good"
-              : "Bad";
-      }
-      const totalTicks = sortedTicks.length;
-      const upTicks = sortedTicks.filter((t) => t.status === "Good").length;
-      // const downTicks = sortedTicks.filter((t) => t.status === "Bad").length;
-      const uptimePercentage =
-        totalTicks === 0 ? 100 : (upTicks / totalTicks) * 100;
-
-      const avgResponseTime =
-        recentTicks.length > 0
-          ? recentTicks.reduce((acc, tick) => acc + tick.latency, 0) /
-            recentTicks.length
-          : 0;
-
-      const currentStatus = windows[windows.length - 1];
-      const lastChecked =
-        sortedTicks.length > 0
-          ? new Date(sortedTicks[0].createdAt).toLocaleDateString()
-          : "Never";
-
-      return {
-        id: website.id,
-        url: website.url,
-        totalChecks: website._count.ticks,
-        status: currentStatus,
-        uptime: uptimePercentage,
-        avgResponseTime,
-        recentTicks,
-        tickWindows: windows,
-        lastChecked,
-      };
-    });
-  }, [websites]);
-  // console.log(websites, processedWebsites);
-
-  const getStatusColor = (status: UpTimeStatus) => {
-    switch (status) {
-      case "Good":
-        return "bg-emerald-500";
-      case "Bad":
-        return "bg-red-500";
-      case "Degraded":
-        return "bg-gray-500";
-    }
-  };
+  const { subscription } = useSubscription();
+  const processedWebsites = useProcessedWebsites(websites);
 
   const getStatusIcon = (status: "Good" | "Bad") => {
     return status === "Good" ? (
@@ -134,30 +37,13 @@ export default function DashboardPage() {
     );
   };
 
-  const getRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${Math.floor(diffHours / 24)}d ago`;
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-linear-to-b from-slate-900 to-slate-800 text-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex items-center justify-center h-64">
-            <div className="flex items-center gap-3">
-              <Activity className="h-6 w-6 animate-pulse text-emerald-500" />
-              <span className="text-lg text-slate-300">
-                Loading dashboard...
-              </span>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="flex items-center justify-center h-64">
+          <div className="flex items-center gap-3">
+            <Activity className="h-6 w-6 animate-pulse text-emerald-500" />
+            <span className="text-lg text-slate-300">Loading dashboard...</span>
           </div>
         </div>
       </div>
@@ -166,44 +52,52 @@ export default function DashboardPage() {
 
   //   if (error) {
   //     return (
-  //       <div className="min-h-screen bg-linear-to-b from-slate-900 to-slate-800 text-slate-100">
-  //         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-  //           <Card className="bg-red-900/20 border-red-500">
-  //             <CardContent className="pt-6">
-  //               <div className="flex items-center gap-3">
-  //                 <AlertCircle className="h-6 w-6 text-red-500" />
-  //                 <div>
-  //                   <h3 className="text-lg font-semibold text-red-400">Error</h3>
-  //                   <p className="text-red-300">{error}</p>
-  //                 </div>
+  //       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  //         <Card className="bg-red-500/10 border-red-500/50">
+  //           <CardContent className="pt-6">
+  //             <div className="flex items-center gap-3">
+  //               <AlertCircle className="h-6 w-6 text-red-400" />
+  //               <div>
+  //                 <h3 className="text-lg font-semibold text-red-400">Error</h3>
+  //                 <p className="text-red-300">{error}</p>
   //               </div>
-  //             </CardContent>
-  //           </Card>
-  //         </div>
+  //             </div>
+  //           </CardContent>
+  //         </Card>
   //       </div>
   //     );
   //   }
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-slate-900 to-slate-800 text-slate-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <Activity className="h-8 w-8 text-emerald-500" />
               <h1 className="text-4xl font-bold text-slate-100">Dashboard</h1>
+              {subscription && <SubscriptionBadge plan={subscription.plan} />}
             </div>
             <AddWebsiteModal />
           </div>
           <p className="text-slate-400">
             Monitor all your websites in one place
           </p>
+          {subscription && !subscription.isActive && subscription.expiresAt && (
+            <div className="mt-4 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+              <p className="text-sm text-orange-400">
+                Your subscription expired on{" "}
+                {new Date(subscription.expiresAt).toLocaleDateString()}. Please
+                renew to continue monitoring.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-slate-900/50 border-slate-800 hover:border-blue-500/50 transition-all">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -212,34 +106,34 @@ export default function DashboardPage() {
                     {processedWebsites.length}
                   </p>
                 </div>
-                <Globe className="h-8 w-8 text-blue-500" />
+                <Globe className="h-8 w-8 text-blue-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-slate-900/50 border-slate-800 hover:border-emerald-500/50 transition-all">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-400">Operational</p>
-                  <p className="text-3xl font-bold text-emerald-500">
+                  <p className="text-3xl font-bold text-emerald-400">
                     {
                       processedWebsites.filter((w) => w.status === "Good")
                         .length
                     }
                   </p>
                 </div>
-                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+                <CheckCircle2 className="h-8 w-8 text-emerald-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-slate-900/50 border-slate-800 hover:border-red-500/50 transition-all">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-400">Issues</p>
-                  <p className="text-3xl font-bold text-red-500">
+                  <p className="text-3xl font-bold text-red-400">
                     {
                       processedWebsites.filter(
                         (w) => w.status === "Bad" || w.status === "Degraded"
@@ -247,17 +141,17 @@ export default function DashboardPage() {
                     }
                   </p>
                 </div>
-                <AlertCircle className="h-8 w-8 text-red-500" />
+                <AlertCircle className="h-8 w-8 text-red-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-slate-900/50 border-slate-800 hover:border-emerald-500/50 transition-all">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-400">Avg Uptime</p>
-                  <p className="text-3xl font-bold text-slate-100">
+                  <p className="text-3xl font-bold text-emerald-400">
                     {processedWebsites.length > 0
                       ? (
                           processedWebsites.reduce(
@@ -269,7 +163,7 @@ export default function DashboardPage() {
                     %
                   </p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-emerald-500" />
+                <TrendingUp className="h-8 w-8 text-emerald-400" />
               </div>
             </CardContent>
           </Card>
@@ -277,10 +171,10 @@ export default function DashboardPage() {
 
         {/* Websites List */}
         {processedWebsites.length === 0 ? (
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-slate-900/50 border-slate-800">
             <CardContent className="pt-6 pb-6">
               <div className="text-center py-12">
-                <Globe className="h-16 w-16 text-slate-600 mx-auto mb-4" />
+                <Globe className="h-16 w-16 text-slate-700 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-slate-300 mb-2">
                   No websites yet
                 </h3>
@@ -294,7 +188,10 @@ export default function DashboardPage() {
         ) : (
           <div className="space-y-4">
             {processedWebsites.map((website) => (
-              <Card key={website.id} className="bg-slate-800 border-slate-700">
+              <Card
+                key={website.id}
+                className="bg-slate-900/50 border-slate-800 hover:border-emerald-500/30 transition-all"
+              >
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value={website.id} className="border-none">
                     <AccordionTrigger className="hover:no-underline px-6">
@@ -401,7 +298,7 @@ export default function DashboardPage() {
                               {website.recentTicks.map((tick) => (
                                 <div
                                   key={tick.id}
-                                  className="flex items-center justify-between py-3 px-4 bg-slate-900/50 rounded-lg hover:bg-slate-900/70 transition-colors border border-slate-700/50"
+                                  className="flex items-center justify-between py-3 px-4 bg-slate-950/50 rounded-lg hover:bg-slate-950/70 transition-colors border border-slate-800/50"
                                 >
                                   <div className="flex items-center gap-3">
                                     {getStatusIcon(tick.status)}
@@ -441,6 +338,6 @@ export default function DashboardPage() {
         )}
       </div>
       <InvoiceList />
-    </div>
+    </>
   );
 }

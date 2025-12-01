@@ -1,15 +1,15 @@
 import { prisma } from "@repo/db/client";
-import { WebsiteTickModel , WebsiteStatus} from "@repo/db";
+import { WebsiteTick, WebsiteStatus } from "@repo/db";
 
 import { NextRequest, NextResponse } from "next/server";
 
 // Get website status by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { websiteId: string } }
+  { params }: { params: Promise<{ websiteId: string }> }
 ) {
   try {
-    const { websiteId } = params;
+    const { websiteId } = await params;
 
     // Check if website exists
     const website = await prisma.website.findUnique({
@@ -42,10 +42,10 @@ export async function GET(
     // Calculate statistics
     const totalTicks = ticks.length;
     const goodTicks = ticks.filter(
-      (t: WebsiteTickModel) => t.status === WebsiteStatus.Good
+      (t: WebsiteTick) => t.status === WebsiteStatus.Good
     ).length;
     const badTicks = ticks.filter(
-      (t: WebsiteTickModel) => t.status === WebsiteStatus.Bad
+      (t: WebsiteTick) => t.status === WebsiteStatus.Bad
     ).length;
     const uptime =
       totalTicks > 0 ? ((goodTicks / totalTicks) * 100).toFixed(2) : "0.00";
@@ -53,7 +53,7 @@ export async function GET(
     const avgLatency =
       totalTicks > 0
         ? Math.round(
-            ticks.reduce((sum: number, t: WebsiteTickModel) => sum + t.latency, 0) /
+            ticks.reduce((sum: number, t: WebsiteTick) => sum + t.latency, 0) /
               totalTicks
           )
         : 0;
@@ -63,9 +63,11 @@ export async function GET(
 
     // Get last 24 hours ticks
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const recentTicks = ticks.filter((t: WebsiteTickModel) => t.timestamp >= last24Hours);
+    const recentTicks = ticks.filter(
+      (t: WebsiteTick) => t.timestamp >= last24Hours
+    );
     const recentGood = recentTicks.filter(
-      (t: WebsiteTickModel) => t.status === WebsiteStatus.Good
+      (t: WebsiteTick) => t.status === WebsiteStatus.Good
     ).length;
     const recentUptime =
       recentTicks.length > 0
@@ -74,7 +76,7 @@ export async function GET(
 
     // // Calculate status by validator location
     // const statusByLocation = ticks.reduce(
-    //   (acc: any, tick: WebsiteTickModel) => {
+    //   (acc: any, tick: WebsiteTick) => {
     //     const location = tick.validator.location || "Unknown";
     //     if (!acc[location]) {
     //       acc[location] = { good: 0, bad: 0, avgLatency: 0, count: 0 };
@@ -113,7 +115,7 @@ export async function GET(
         lastCheckLatency: latestTick?.latency || null,
       },
       // byLocation: statusByLocation,
-      recentTicks: ticks.slice(0, 20).map((tick: WebsiteTickModel) => ({
+      recentTicks: ticks.slice(0, 20).map((tick: WebsiteTick) => ({
         id: tick.id,
         status: tick.status,
         latency: tick.latency,

@@ -27,10 +27,10 @@ export default function RootLayout({
     <html lang="en">
       <ClerkProvider>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-950 text-slate-100`}
         >
           <Navbar />
-          <div className="pt-32 bg-linear-to-b from-slate-900 to-slate-800">{children}</div>
+          <main className="min-h-screen py-12">{children}</main>
         </body>
       </ClerkProvider>
     </html>

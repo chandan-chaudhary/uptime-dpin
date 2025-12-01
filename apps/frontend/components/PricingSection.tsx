@@ -9,169 +9,23 @@ import {
   CardContent,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { ethers } from "ethers";
-import paymentAbi from "@/lib/Payment_abi.json";
-import { useState } from "react";
-import { PAYMENT_CONTRACT_ADDRESS } from "@/lib/utils";
-import axios from "axios";
-
-export interface PricingPlan {
-  id: string;
-  title: string;
-  description: string;
-  priceEth: number;
-  isPopular?: boolean;
-  features: string[];
-}
-
-const pricingPlans: PricingPlan[] = [
-  {
-    id: "starter",
-    title: "Starter",
-    description: "Perfect for small projects",
-    priceEth: 0.01,
-    features: [
-      "5 monitors",
-      "1-minute checks",
-      "Email alerts",
-      "30-day history",
-    ],
-  },
-  {
-    id: "professional",
-    title: "Professional",
-    description: "For growing businesses",
-    priceEth: 0.05,
-    isPopular: true,
-    features: [
-      "25 monitors",
-      "30-second checks",
-      "All alert channels",
-      "1-year history",
-      "SSL monitoring",
-    ],
-  },
-  {
-    id: "enterprise",
-    title: "Enterprise",
-    description: "For large organizations",
-    priceEth: 0.1,
-    features: [
-      "Unlimited monitors",
-      "10-second checks",
-      "Priority support",
-      "Unlimited history",
-      "Custom integrations",
-    ],
-  },
-];
-
-declare global {
-  interface Window {
-    ethereum?: ethers.Eip1193Provider;
-  }
-}
-
-export async function connectWallet(): Promise<{
-  provider: ethers.BrowserProvider;
-  signer: ethers.Signer;
-  publicKey: string;
-} | null> {
-  if (!window.ethereum) {
-    alert("No wallet found!");
-    return null;
-  }
-  try {
-    await window.ethereum.request({
-      method: "wallet_requestPermissions",
-      params: [{ eth_accounts: {} }],
-    });
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    const publicKey = await signer.getAddress();
-    return { provider, signer, publicKey };
-  } catch (err) {
-    alert(
-      "Wallet connection failed: " +
-        (err instanceof Error ? err.message : String(err))
-    );
-    return null;
-  }
-}
+import { useSubscribe } from "@/hooks/useSubscribe";
+import { PricingPlan, pricingPlans } from "@/hooks/pricingPlan";
 
 export default function PricingSection() {
-  const [loading, setLoading] = useState(false);
-  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
+  const { subscribe, loading, currentPlan } = useSubscribe();
 
   async function handleSubscribe(plan: PricingPlan) {
-    setLoading(true);
-    setCurrentPlan(plan.id);
-    let txHash: string | null = null;
-    let status = "Pending";
-    try {
-      const wallet = await connectWallet();
-      if (!wallet) {
-        setLoading(false);
-        return;
-      }
-      const { signer, publicKey } = wallet;
-      const contractAddress = PAYMENT_CONTRACT_ADDRESS;
-      if (
-        !contractAddress ||
-        contractAddress === "" ||
-        contractAddress === "null"
-      ) {
-        alert("Payment contract address is not set. Please contact support.");
-        setLoading(false);
-        return;
-      }
-      const contract = new ethers.Contract(
-        contractAddress,
-        paymentAbi.abi,
-        signer
-      );
-      // Prompt wallet for confirmation
-      try {
-        const tx = await contract.receivePayment(
-          publicKey,
-          ethers.parseEther(plan.priceEth.toString()),
-          { value: ethers.parseEther(plan.priceEth.toString()) }
-        );
-        const receipt = await tx.wait();
-        txHash = receipt.hash;
-        status = "Paid";
-        alert(`Payment successful! TxHash: ${txHash}`);
-      } catch (walletErr) {
-        status = "Failed";
-        const walletErrMessage =
-          walletErr instanceof Error ? walletErr.message : String(walletErr);
-        alert("Payment cancelled or failed: " + walletErrMessage);
-      }
-      // Send txHash and details to backend using axios
-      const res = await axios.post(
-        "/api/pay",
-        {
-          planId: plan.id,
-          amountEth: plan.priceEth,
-          txHash,
-          publicKey,
-          status,
-        },
-        { headers: { "Content-Type": "application/json" } }
-      );
-      if (!res) throw new Error("No response from backend");
-      if (res.status === 200 && res.data) {
-        const data = res.data;
-        if (!data?.success) {
-          alert(`Backend update failed: ${data?.error ?? "Unknown error"}`);
-        }
-        alert("Subscription recorded successfully.");
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      alert("Payment error: " + message);
-    } finally {
-      setLoading(false);
+    const result = await subscribe(plan);
+    if (!result) {
+      alert("Subscription failed. No response from subscription service.");
+      return;
+    }
+    if (result.success) {
+      alert(`Payment successful! TxHash: ${result.txHash}`);
+      alert("Subscription recorded successfully.");
+    } else {
+      alert("Payment error: " + (result.error ?? "Unknown error"));
     }
   }
 
