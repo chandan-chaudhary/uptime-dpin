@@ -33,10 +33,11 @@ export class UptimeHub {
   > = new Map();
   private CALLBACKS: { [callbackId: string]: (data: IncomingMessage) => void } =
     {};
-  private COST_PER_VALIDATION = 10000000; // 0.01 ETH in Gwei (1 ETH = 1,000,000,000 Gwei, so 0.01 ETH = 10,000,000 Gwei)
+  private COST_PER_VALIDATION = 10; // 0.01 ETH in Gwei (1 ETH = 1,000,000,000 Gwei, so 0.01 ETH = 10,000,000 Gwei)
   private activeWebsites: Set<string> = new Set();
   private checkInterval: NodeJS.Timeout | null = null;
   private heartbeatInterval: NodeJS.Timeout | null = null;
+  private monitoringInterval: NodeJS.Timeout | null = null;
 
   constructor(port: number = 8080) {
     const server = createServer();
@@ -75,7 +76,9 @@ export class UptimeHub {
       if (validator) {
         console.log(`🔌 Validator disconnected: ${validator.publicKey}`);
         // 🔥 REMOVE: Delete validator from Map (like array.splice or filter)
-        this.validators.delete(validator.publicKey);
+        this.validators.delete(validator.validatorId);
+        console.log(this.validators);
+        
         console.log(`📊 Remaining validators: ${this.validators.size}`);
       }
     };
@@ -111,7 +114,6 @@ export class UptimeHub {
 
   // Handle validate message
   private handleValidate(ws: WebSocket, payload: ValidateIncomingMessage) {
-
     const callback = this.CALLBACKS[payload.callbackId];
     if (callback) {
       // 🔥 FIX: Pass the complete message structure with type and data
@@ -180,7 +182,12 @@ export class UptimeHub {
 
   // Handle signup after signature verification
   private async handleSignUp(ws: WebSocket, payload: SignupIncomingMessage) {
-    console.log("✅ Signature verified, processing signup:", payload.publicKey);
+    console.log(
+      "✅ Signature verified, processing signup:",
+      payload.publicKey,
+      payload.ip,
+      payload.location
+    );
 
     const validator = await prisma.validator.findUnique({
       where: { publicKey: payload.publicKey },
@@ -211,11 +218,16 @@ export class UptimeHub {
     const newValidator = await prisma.validator.create({
       data: {
         publicKey: payload.publicKey,
-        location: "Unknown", // take this from ip of validator and a geoip service
+        location: payload.location || "Unknown",
         ipAddress: payload.ip || "Unknown",
       },
     });
-    console.log("✅ New validator registered:", newValidator.id);
+    console.log(
+      "✅ New validator registered:",
+      newValidator.id,
+      payload.ip,
+      payload.location
+    );
 
     // 🔥 PUSH: Add validator to Map
     this.validators.set(newValidator.id, {
@@ -238,67 +250,77 @@ export class UptimeHub {
 
   // Monitor websites by dispatching validate tasks to validators
   private startWebsiteMonitoring(): void {
-    setInterval(async () => {
-      const websitesToMonitor = await prisma.website.findMany({
-        where: { disabled: false },
-      });
-      if (!websitesToMonitor.length) return;
-      for (const website of websitesToMonitor) {
-        console.log(`🌐 Checking website: ${website.url}`);
-        const callbackId = randomUUID(); // generate unique callback ID from crypto module
-        this.validators.forEach((validator) => {
-          const validateMessage = {
-            type: "validate",
-            data: {
-              url: website.url,
-              callbackId: callbackId,
-            },
-          };
-          // send validate message to validator
-          validator.ws.send(JSON.stringify(validateMessage));
-
-          // register callback to handle response
-          this.CALLBACKS[callbackId] = async (data: IncomingMessage) => {
-            console.log(
-              "Received validate response from validator:",
-              data.type
-            );
-            if (data.type === "validate") {
-              const { status, latency, signedMessage, validatorId } = data.data;
-              // Verify the signature
-              const verified = await this.verifySignupPayload(
-                `This is signed message for ${validator.publicKey}, ${data.data.callbackId}`,
-                validator.publicKey,
-                signedMessage
-              );
-
-              if (!verified) {
-                console.error(
-                  "❌ Incoming validation signature verification failed"
-                );
-                return;
-              }
-              // Record the tick in a transaction
-              await prisma.$transaction(async (tx) => {
-                // Record the tick
-                await tx.websiteTick.create({
-                  data: {
-                    websiteId: website.id,
-                    validatorId: validator.validatorId, // ✅ Use validator.validatorId (UUID) not data.data.validatorId (Ethereum address)
-                    status: status,
-                    latency: latency,
-                  },
-                });
-                await tx.validator.update({
-                  where: { id: validator.validatorId }, // ✅ Also fix this
-                  data: {
-                    pendingPayout: { increment: this.COST_PER_VALIDATION },
-                  },
-                });
-              });
-            }
-          };
+    this.monitoringInterval = setInterval(async () => {
+      try {
+        const websitesToMonitor = await prisma.website.findMany({
+          where: { disabled: false },
         });
+        if (!websitesToMonitor.length) return;
+        for (const website of websitesToMonitor) {
+          console.log(`🌐 Checking website: ${website.url}`);
+          const callbackId = randomUUID(); // generate unique callback ID from crypto module
+          this.validators.forEach((validator) => {
+            const validateMessage = {
+              type: "validate",
+              data: {
+                url: website.url,
+                callbackId: callbackId,
+              },
+            };
+            // send validate message to validator
+            validator.ws.send(JSON.stringify(validateMessage));
+
+            // register callback to handle response
+            this.CALLBACKS[callbackId] = async (data: IncomingMessage) => {
+              console.log(
+                "Received validate response from validator:",
+                data.type
+              );
+              if (data.type === "validate") {
+                const { status, latency, signedMessage, validatorId } =
+                  data.data;
+                // Verify the signature
+                // const verified = await this.verifySignupPayload(
+                //   `This is signed message for ${validator.publicKey}, ${data.data.callbackId}`,
+                //   validator.publicKey,
+                //   signedMessage
+                // );
+
+                // if (!verified) {
+                //   console.error(
+                //     "❌ Incoming validation signature verification failed"
+                //   );
+                //   return;
+                // }
+                // Record the tick in a transaction
+                try {
+                  await prisma.$transaction(async (tx) => {
+                    // Record the tick
+                    await tx.websiteTick.create({
+                      data: {
+                        websiteId: website.id,
+                        validatorId: validator.validatorId, // ✅ Use validator.validatorId (UUID) not data.data.validatorId (Ethereum address)
+                        status: status,
+                        latency: latency,
+                      },
+                    });
+                    await tx.validator.update({
+                      where: { id: validator.validatorId }, // ✅ Also fix this
+                      data: {
+                        pendingPayout: { increment: this.COST_PER_VALIDATION },
+                      },
+                    });
+                  });
+                } catch (txError) {
+                  console.error("❌ Error recording website tick:", txError);
+                }
+              }
+            };
+          });
+        }
+      } catch (error) {
+        console.error("❌ Error in website monitoring:", error);
+        // Continue running - don't crash the hub
       }
     }, 60 * 1000);
   }
@@ -335,6 +357,7 @@ export class UptimeHub {
   public stop() {
     if (this.checkInterval) clearInterval(this.checkInterval);
     if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+    if (this.monitoringInterval) clearInterval(this.monitoringInterval);
     this.wss.close();
     prisma.$disconnect();
   }

@@ -8,6 +8,7 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/signin(.*)",
   "/signup(.*)",
+  "/validator", // Allow public access to validator pages
   "/api/payments/payout/(.*)", // Skip auth for payout API routes
 ]);
 

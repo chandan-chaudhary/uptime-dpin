@@ -46,17 +46,8 @@ export default function Home() {
                 >
                   Start Monitoring Free
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="text-base text-slate-200 border-slate-700 hover:bg-slate-800"
-                >
-                  View Demo
-                </Button>
+                
               </div>
-              <p className="mt-4 text-sm text-slate-400">
-                No credit card required • 14-day free trial
-              </p>
             </div>
 
             {/* Analytics Dashboard Mockup */}
@@ -331,13 +322,13 @@ export default function Home() {
             >
               Start Free Trial
             </Button>
-            <Button
+            {/* <Button
               size="lg"
               variant="outline"
               className="text-base bg-transparent text-white border-white hover:bg-white/10"
             >
               Schedule Demo
-            </Button>
+            </Button> */}
           </div>
         </div>
       </section>

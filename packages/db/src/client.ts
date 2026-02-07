@@ -16,8 +16,8 @@ export const prisma =
     },
     // Configure transaction timeout and pool size
     transactionOptions: {
-      timeout: 10000, // 10 seconds transaction timeout
-      maxWait: 5000, // 5 seconds max wait to acquire connection
+      timeout: 15000, // 15 seconds transaction timeout
+      maxWait: 10000, // 10 seconds max wait to acquire connection
     },
   });
 

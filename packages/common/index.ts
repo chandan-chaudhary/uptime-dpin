@@ -2,6 +2,7 @@ import { WebsiteStatus } from "@prisma/client";
 
 export interface SignupIncomingMessage {
   ip: string;
+  location: string;
   callbackId: string;
   publicKey: string;
   signedMessage: string;
