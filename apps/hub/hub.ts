@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { WebSocketServer, WebSocket } from "ws";
 import { prisma } from "@repo/db";
-import { PrismaClient } from "@repo/db";
+// import { PrismaClient } from "@repo/db";
 // import { PrismaClient, WebsiteStatus } from "@repo/db";
 import { createServer } from "http";
 import { ethers } from "ethers";
