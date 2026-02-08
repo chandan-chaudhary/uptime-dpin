@@ -6,7 +6,6 @@ import { getUserId } from "@/lib/auth";
 export async function POST(request: NextRequest) {
   const { planId, amountEth, txHash, publicKey, status } = await request.json();
   const userId = getUserId(request);
-  console.log(userId, 'in route.ts');
 
   try {
     // Create invoice with status from frontend
