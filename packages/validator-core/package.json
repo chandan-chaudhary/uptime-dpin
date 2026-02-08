@@ -20,11 +20,11 @@
     },
     "dependencies": {
         "@common/index": "*",
-        "ethers": "^6.15.0"
+        "ethers": "^6.15.0",
+        "tsup": "^8.5.1"
     },
     "devDependencies": {
         "@types/node": "^22.10.2",
-        "tsup": "^8.0.1",
         "typescript": "^5.9.2"
     }
 }
