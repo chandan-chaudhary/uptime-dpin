@@ -16,6 +16,12 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
