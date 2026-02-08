@@ -40,7 +40,10 @@ export class UptimeHub {
   private monitoringInterval: NodeJS.Timeout | null = null;
 
   constructor(port: number = 8080) {
-    const server = createServer();
+    const server = createServer((req, res) => {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("Hub is running");
+    });
     this.wss = new WebSocketServer({ server });
 
     this.wss.on("connection", this.handleConnection.bind(this));
@@ -78,7 +81,7 @@ export class UptimeHub {
         // 🔥 REMOVE: Delete validator from Map (like array.splice or filter)
         this.validators.delete(validator.validatorId);
         console.log(this.validators);
-        
+
         console.log(`📊 Remaining validators: ${this.validators.size}`);
       }
     };
@@ -105,7 +108,7 @@ export class UptimeHub {
     const verified = await this.verifySignupPayload(
       `This is signed message for ${payload.publicKey}, ${payload.callbackId}`,
       payload.publicKey,
-      payload.signedMessage
+      payload.signedMessage,
     );
     if (verified) {
       await this.handleSignUp(ws, payload);
@@ -142,7 +145,7 @@ export class UptimeHub {
   private async verifySignupPayload(
     message: string,
     publicKey: string,
-    signature: string
+    signature: string,
   ): Promise<boolean> {
     try {
       // Validate inputs
@@ -169,7 +172,7 @@ export class UptimeHub {
         console.error(
           `❌ Signature verification failed!\n` +
             `   Expected: ${publicKey}\n` +
-            `   Recovered: ${recoveredAddress}`
+            `   Recovered: ${recoveredAddress}`,
         );
       }
 
@@ -186,7 +189,7 @@ export class UptimeHub {
       "✅ Signature verified, processing signup:",
       payload.publicKey,
       payload.ip,
-      payload.location
+      payload.location,
     );
 
     const validator = await prisma.validator.findUnique({
@@ -226,7 +229,7 @@ export class UptimeHub {
       "✅ New validator registered:",
       newValidator.id,
       payload.ip,
-      payload.location
+      payload.location,
     );
 
     // 🔥 PUSH: Add validator to Map
@@ -274,7 +277,7 @@ export class UptimeHub {
             this.CALLBACKS[callbackId] = async (data: IncomingMessage) => {
               console.log(
                 "Received validate response from validator:",
-                data.type
+                data.type,
               );
               if (data.type === "validate") {
                 const { status, latency, signedMessage, validatorId } =
@@ -377,6 +380,6 @@ process.on("SIGINT", () => {
 setInterval(() => {
   const stats = hub.getStats();
   console.log(
-    `📊 Stats: ${stats.activeValidators} validators, ${stats.activeWebsites} websites`
+    `📊 Stats: ${stats.activeValidators} validators, ${stats.activeWebsites} websites`,
   );
 }, 60000);
