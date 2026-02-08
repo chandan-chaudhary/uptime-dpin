@@ -32,3 +32,19 @@
         "dist"
     ]
 }
+// {
+//   "extends": "@repo/typescript-config/base.json",
+//   "compilerOptions": {
+//     "target": "ES2020",
+//     "module": "CommonJS",
+//     "outDir": "dist",
+//     "rootDir": "src",
+//     "declaration": true,
+//     "strict": true,
+//     "esModuleInterop": true,
+//     "moduleResolution": "node",
+//     "types": ["node"]
+//   },
+//   "include": ["src"],
+//   "exclude": ["node_modules", "dist", "prisma"]
+// }

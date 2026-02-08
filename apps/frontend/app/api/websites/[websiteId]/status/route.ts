@@ -1,4 +1,4 @@
-import { prisma } from "@repo/db/client";
+import { prisma } from "@repo/db";
 import { WebsiteTick, WebsiteStatus } from "@repo/db";
 
 import { NextRequest, NextResponse } from "next/server";
@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 // Get website status by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ websiteId: string }> }
+  { params }: { params: Promise<{ websiteId: string }> },
 ) {
   try {
     const { websiteId } = await params;
@@ -42,10 +42,10 @@ export async function GET(
     // Calculate statistics
     const totalTicks = ticks.length;
     const goodTicks = ticks.filter(
-      (t: WebsiteTick) => t.status === WebsiteStatus.Good
+      (t: WebsiteTick) => t.status === WebsiteStatus.Good,
     ).length;
     const badTicks = ticks.filter(
-      (t: WebsiteTick) => t.status === WebsiteStatus.Bad
+      (t: WebsiteTick) => t.status === WebsiteStatus.Bad,
     ).length;
     const uptime =
       totalTicks > 0 ? ((goodTicks / totalTicks) * 100).toFixed(2) : "0.00";
@@ -54,7 +54,7 @@ export async function GET(
       totalTicks > 0
         ? Math.round(
             ticks.reduce((sum: number, t: WebsiteTick) => sum + t.latency, 0) /
-              totalTicks
+              totalTicks,
           )
         : 0;
 
@@ -64,10 +64,10 @@ export async function GET(
     // Get last 24 hours ticks
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const recentTicks = ticks.filter(
-      (t: WebsiteTick) => t.timestamp >= last24Hours
+      (t: WebsiteTick) => t.timestamp >= last24Hours,
     );
     const recentGood = recentTicks.filter(
-      (t: WebsiteTick) => t.status === WebsiteStatus.Good
+      (t: WebsiteTick) => t.status === WebsiteStatus.Good,
     ).length;
     const recentUptime =
       recentTicks.length > 0
@@ -127,7 +127,7 @@ export async function GET(
     console.error("Get website status error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

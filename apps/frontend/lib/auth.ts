@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
-import { prisma } from "@repo/db/client";
+import { prisma } from "@repo/db";
 
 // Get userId from header (set by middleware)
 export function getUserId(request: NextRequest): string | null {

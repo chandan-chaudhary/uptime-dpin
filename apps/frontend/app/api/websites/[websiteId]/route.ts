@@ -1,10 +1,10 @@
-import { prisma } from "@repo/db/client";
+import { prisma } from "@repo/db";
 import { NextRequest, NextResponse } from "next/server";
 
 // Get website by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ websiteId: string }> }
+  { params }: { params: Promise<{ websiteId: string }> },
 ) {
   try {
     const { websiteId } = await params;
@@ -49,7 +49,7 @@ export async function GET(
     console.error("Get website error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -57,7 +57,7 @@ export async function GET(
 // Update website by ID
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ websiteId: string }> }
+  { params }: { params: Promise<{ websiteId: string }> },
 ) {
   try {
     const { websiteId } = await params;
@@ -80,7 +80,7 @@ export async function PATCH(
       } catch {
         return NextResponse.json(
           { error: "Invalid URL format" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -109,7 +109,7 @@ export async function PATCH(
     console.error("Update website error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -117,7 +117,7 @@ export async function PATCH(
 // Delete website by ID
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ websiteId: string }> }
+  { params }: { params: Promise<{ websiteId: string }> },
 ) {
   try {
     const { websiteId } = await params;
@@ -143,7 +143,7 @@ export async function DELETE(
     console.error("Delete website error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

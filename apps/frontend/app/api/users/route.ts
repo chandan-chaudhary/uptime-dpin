@@ -1,4 +1,4 @@
-import { prisma } from "@repo/db/client";
+import { prisma } from "@repo/db";
 import { NextResponse } from "next/server";
 
 // Get all users
@@ -29,7 +29,7 @@ export async function GET() {
     console.error("Get users error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

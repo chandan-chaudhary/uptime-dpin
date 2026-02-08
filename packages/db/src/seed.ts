@@ -2,7 +2,10 @@ import { PrismaClient, WebsiteStatus } from "@prisma/client";
 import "dotenv/config";
 
 const prisma = new PrismaClient();
-
+  // "exports": {
+  //   "./client": "./src/client.ts",
+  //   ".": "./src/index.ts"
+  // },
 /**
  * Seed Users
  * Creates test users with different scenarios

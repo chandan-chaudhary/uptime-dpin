@@ -1,4 +1,4 @@
-import { prisma } from "@repo/db/client";
+import { prisma } from "@repo/db";
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     console.error("Get websites error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json(
         { error: "Unauthorized - Please login" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json(
         { error: "Invalid URL format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     if (existingWebsite) {
       return NextResponse.json(
         { error: "Website already exists for this user" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -112,13 +112,13 @@ export async function POST(request: NextRequest) {
         message: "Website created successfully",
         website,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Create website error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
